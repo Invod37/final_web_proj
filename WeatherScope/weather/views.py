@@ -56,3 +56,10 @@ def favorite_cities_list(request):
     cities = Like.objects.all()
     cities_list = [{"id": city.id, "city_name": city.city_name} for city in cities]
     return Response(cities_list)
+@api_view(['DELETE'])
+def like_city_delete(request, city_id):
+    if Like.objects.filter(id=city_id).exists():
+        Like.objects.filter(id=city_id).delete()
+        return Response({"message": "Deleted"}, status=status.HTTP_200_OK)
+    else:
+        return Response({"error": "City not found"}, status=status.HTTP_404_NOT_FOUND)
