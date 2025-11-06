@@ -1,17 +1,21 @@
-
-import requests
-from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Like
 from django.contrib.auth.models import User
+from .models import Like
 from .serializers import LikeSerializer
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+import requests
+
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_weather(request):
     appid = '7e8aa7cdfb2050e8a1c183a3922963a6'
     url = 'https://api.openweathermap.org/data/2.5/weather?q={}&units=metric&appid=' + appid
     city = request.query_params.get('city', 'London')
+
     try:
         response = requests.get(url.format(city))
         response.raise_for_status()
@@ -26,69 +30,84 @@ def get_weather(request):
             'wind_speed': data['wind']['speed'],
             'pressure': data['main']['pressure'],
         }
-
         return Response(city_info, status=status.HTTP_200_OK)
 
     except requests.exceptions.RequestException as e:
-        return Response(
-            {'error': 'Failed to fetch weather data', 'detail': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-    except KeyError as e:
-        return Response(
-            {'error': 'City not found', 'detail': str(e)},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({'error': 'Failed to fetch weather data', 'detail': str(e)}, 500)
+
+
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def like_city(request):
+    user = request.user
     city_name = request.data.get('city_name')
+
     if not city_name:
-        return Response({"error": "Enter name"})
-    if Like.objects.filter(city_name=city_name).exists():
-        return Response({"message": "Added"})
+        return Response({"error": "Enter city name"}, 400)
 
-    Like.objects.create(city_name=city_name)
+    if Like.objects.filter(user=user, city_name=city_name).exists():
+        return Response({"message": "Already added"})
 
+    Like.objects.create(user=user, city_name=city_name)
     return Response({"message": "Added"})
+
+
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def favorite_cities_list(request):
-    cities = Like.objects.all()
-    cities_list = [{"id": city.id, "city_name": city.city_name} for city in cities]
-    return Response(cities_list)
+    user = request.user
+    cities = Like.objects.filter(user=user)
+    data = [{"id": c.id, "city_name": c.city_name} for c in cities]
+    return Response(data)
+
+
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def like_city_delete(request, city_id):
-    if Like.objects.filter(id=city_id).exists():
-        Like.objects.filter(id=city_id).delete()
-        return Response({"message": "Deleted"}, status=status.HTTP_200_OK)
-    else:
-        return Response({"error": "City not found"}, status=status.HTTP_404_NOT_FOUND)
+    user = request.user
+    if Like.objects.filter(id=city_id, user=user).exists():
+        Like.objects.filter(id=city_id, user=user).delete()
+        return Response({"message": "Deleted"})
+    return Response({"error": "City not found"}, 404)
+
+
+from rest_framework_simplejwt.tokens import RefreshToken
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def register(request):
-    try:
-        username = request.data.get('username')
-        password1 = request.data.get('password1')
-        password2 = request.data.get('password2')
-        email = request.data.get('email')
+    username = request.data.get('username')
+    password1 = request.data.get('password1')
+    password2 = request.data.get('password2')
+    email = request.data.get('email')
 
-        if not username or not password1 or not password2 or not email:
-            return Response({"error": ["всі поля обов'язкові"]}, 400)
+    if not username or not password1 or not password2 or not email:
+        return Response({"error": ["всі поля обов'язкові"]}, 400)
+    if password1 != password2:
+        return Response({"password2": ["паролі не співпадають"]}, 400)
+    if User.objects.filter(username=username).exists():
+        return Response({"username": ["користувач вже існує"]}, 400)
 
-        if password1 != password2:
-            return Response({"password2": ["паролі не співпадають"]}, 400)
+    user = User.objects.create_user(username=username, email=email, password=password1)
+    return Response({"message": "registered"}, 201)
 
-        if User.objects.filter(username=username).exists():
-            return Response({"username": ["користувач вже існує"]}, 400)
-
-        if User.objects.filter(email=email).exists():
-            return Response({"email": ["пошта вже існує"]}, 400)
-
-        user = User.objects.create_user(username=username, email=email, password=password1)
-
-        return Response({"message": "registered"}, 201)
-
-    except Exception as e:
-        return Response({"error": [str(e)]}, 500)
 
 @api_view(['POST'])
 def login(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        return Response({"username": ["користувач не знайдений"]}, 400)
+
+    if not user.check_password(password):
+        return Response({"password": ["неправильний пароль"]}, 400)
+
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        "refresh": str(refresh),
+        "access": str(refresh.access_token),
+        "message": "logged in"
+    })

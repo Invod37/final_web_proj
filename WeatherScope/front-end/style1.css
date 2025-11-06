@@ -1,4 +1,4 @@
-/* === Sidebar improvements === */
+
 .sidebar {
   position: fixed;
   top: 0;
@@ -10,8 +10,6 @@
   background: linear-gradient(180deg, #1c1c1c, #2a2a2a);
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.05);
 }
-
-/* Назва секції ("Меню") */
 .sidebar h4 {
   color: #f5f5f5;
   text-align: center;
@@ -19,7 +17,6 @@
   font-weight: 600;
 }
 
-/* Посилання меню */
 .sidebar .nav-link {
   display: block;
   font-weight: 500;
@@ -31,20 +28,17 @@
   text-decoration: none;
 }
 
-/* Наведення */
 .sidebar .nav-link:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
 }
 
-/* Активна сторінка */
 .sidebar .nav-link.active {
   background: #0d6efd;
   color: #fff;
   font-weight: 600;
 }
 
-/* Контент праворуч від панелі */
 main {
   margin-left: 250px;
   padding: 1rem;
@@ -53,7 +47,6 @@ main {
   min-height: 100vh;
 }
 
-/* Для мобільних */
 @media (max-width: 991.98px) {
   .sidebar {
     position: static;

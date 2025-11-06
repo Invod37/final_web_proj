@@ -69,28 +69,38 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-     API_URL = 'http://127.0.0.1:8000/api/v1';
+  const API_URL = "http://127.0.0.1:8000/api/v1";
 
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-   e.preventDefault();
-   console.log('Форма відправлена');
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-   const username = document.getElementById('username').value;
-   const password = document.getElementById('password').value;
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
 
-   const forma = new FormData()
-   forma.append("username",username)
-   forma.append("password",password)
+    try {
+      const response = await fetch(`${API_URL}/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
 
-  const response = await fetch(`${API_URL}/login/`,{
-    method: 'POST',
-    body: forma
-  })
-  const data = await response.json();
-  console.log('Відповідь:', data);
-  console.log('Статус:', response.status);
-});
-  </script>
+      const data = await response.json();
+      console.log("Відповідь сервера:", data);
 
+      if (response.ok) {
+        localStorage.setItem('token', data.access);
+        localStorage.setItem('refresh', data.refresh);
+
+        console.log("Access токен збережено:", data.access);
+        window.location.href = 'index.html';
+      } else {
+        alert("Помилка входу: " + (data.detail || "невірні дані"));
+      }
+    } catch (error) {
+      console.error("Помилка запиту:", error);
+      alert("Помилка з'єднання із сервером");
+    }
+  });
+</script>
 </body>
 </html>

@@ -5,18 +5,41 @@ async function Like(city) {
         return;
     }
 
-    const response = await fetch('http://127.0.0.1:8000/api/v1/like_city/', {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Потрібно залогінитися');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('city_name', city);
+
+    const response = await fetch(`${API_URL}like-city/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ city_name: city })
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
+        body: formData
     });
 
     const data = await response.json();
     alert(data.message);
     getFavoriteCities();
 }
+
 async function getFavoriteCities() {
-    const response = await fetch('http://127.0.0.1:8000/api/v1/favorite-cities/');
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Потрібно залогінитися');
+        return;
+    }
+
+    const response = await fetch(`${API_URL}favorite-cities/`, {
+        headers: {
+
+            'Authorization': `Bearer ${token}`
+        }
+    });
     const data = await response.json();
 
     const listDiv = document.getElementById('favorite-cities-list');
