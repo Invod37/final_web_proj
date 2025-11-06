@@ -1,9 +1,12 @@
+
 import requests
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Like
+from django.contrib.auth.models import User
 from .serializers import LikeSerializer
+
 @api_view(['GET'])
 def get_weather(request):
     appid = '7e8aa7cdfb2050e8a1c183a3922963a6'
@@ -36,8 +39,6 @@ def get_weather(request):
             {'error': 'City not found', 'detail': str(e)},
             status=status.HTTP_404_NOT_FOUND
         )
-
-
 @api_view(['POST'])
 def like_city(request):
     city_name = request.data.get('city_name')
@@ -49,8 +50,6 @@ def like_city(request):
     Like.objects.create(city_name=city_name)
 
     return Response({"message": "Added"})
-
-
 @api_view(['GET'])
 def favorite_cities_list(request):
     cities = Like.objects.all()
@@ -63,3 +62,33 @@ def like_city_delete(request, city_id):
         return Response({"message": "Deleted"}, status=status.HTTP_200_OK)
     else:
         return Response({"error": "City not found"}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+def register(request):
+    try:
+        username = request.data.get('username')
+        password1 = request.data.get('password1')
+        password2 = request.data.get('password2')
+        email = request.data.get('email')
+
+        if not username or not password1 or not password2 or not email:
+            return Response({"error": ["всі поля обов'язкові"]}, 400)
+
+        if password1 != password2:
+            return Response({"password2": ["паролі не співпадають"]}, 400)
+
+        if User.objects.filter(username=username).exists():
+            return Response({"username": ["користувач вже існує"]}, 400)
+
+        if User.objects.filter(email=email).exists():
+            return Response({"email": ["пошта вже існує"]}, 400)
+
+        user = User.objects.create_user(username=username, email=email, password=password1)
+
+        return Response({"message": "registered"}, 201)
+
+    except Exception as e:
+        return Response({"error": [str(e)]}, 500)
+
+@api_view(['POST'])
+def login(request):
