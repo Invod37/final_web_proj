@@ -8,7 +8,7 @@ urlpatterns = [
     path('favorite-cities/<int:city_id>/', views.like_city_delete, name='favorite_cities_delete'),
     path('like-city/', views.like_city, name='like-city'),
     path('register/', views.register, name='register'),
-
+    path('outfit-advice/', views.get_outfit_advice, name='outfit_advice'),
 
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),

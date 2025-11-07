@@ -1,14 +1,31 @@
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
 from .models import Like
-from .serializers import LikeSerializer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 import requests
+from google import genai
 
 
+client = genai.Client(api_key='AIzaSyBrFcHanls8a6t7hPgZZWYImNXfMuSkRPE')
+
+def create_chat_title(prompt: str) -> str:
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        if hasattr(response, "text") and response.text:
+            return response.text
+        elif hasattr(response, "candidates"):
+            return response.candidates[0].content.parts[0].text
+        else:
+            return "No text found in Gemini response."
+    except Exception as e:
+        return f"Error: {e}"
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_weather(request):
@@ -35,6 +52,32 @@ def get_weather(request):
     except requests.exceptions.RequestException as e:
         return Response({'error': 'Failed to fetch weather data', 'detail': str(e)}, 500)
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_outfit_advice(request):
+    city = request.query_params.get('city', None)
+    if not city:
+        return Response({"error": "City not specified"}, status=400)
+    appid = '7e8aa7cdfb2050e8a1c183a3922963a6'
+    url = 'https://api.openweathermap.org/data/2.5/weather?q={}&units=metric&appid=' + appid
+    try:
+        weather_response = requests.get(url.format(city))
+        weather_response.raise_for_status()
+        weather_data = weather_response.json()
+
+        weather_context = (
+            f"The temperature in {city} is {weather_data['main']['temp']}°C with "
+            f"{weather_data['weather'][0]['description']}. "
+            f"Humidity is {weather_data['main']['humidity']}%, "
+            f"and wind speed is {weather_data['wind']['speed']} m/s."
+        )
+        prompt = f"Give me a very short and friendly outfit advice for someone in this weather: {weather_context}"
+        advice = create_chat_title(prompt)
+
+        return Response({"city": city, "advice": advice}, status=200)
+
+    except requests.exceptions.RequestException as e:
+        return Response({'error': 'Failed to fetch weather data', 'detail': str(e)}, status=500)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -73,6 +116,7 @@ def like_city_delete(request, city_id):
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
@@ -93,6 +137,7 @@ def register(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def login(request):
     username = request.data.get('username')
     password = request.data.get('password')
