@@ -30,7 +30,8 @@ def create_chat_title(prompt: str) -> str:
 @permission_classes([AllowAny])
 def get_weather(request):
     appid = '7e8aa7cdfb2050e8a1c183a3922963a6'
-    url = 'https://api.openweathermap.org/data/2.5/weather?q={}&units=metric&appid=' + appid
+    units = request.query_params.get('units', 'metric')
+    url = f'https://api.openweathermap.org/data/2.5/weather?q={{}}&units={units}&appid=' + appid
     city = request.query_params.get('city', 'London')
 
     try:
