@@ -1,4 +1,4 @@
-
+from collections import defaultdict
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -157,3 +157,69 @@ def login(request):
         "access": str(refresh.access_token),
         "message": "logged in"
     })
+
+def get_coordinates(city_name, state_code='', country_code=''):
+    limit = 1
+    appid = '7e8aa7cdfb2050e8a1c183a3922963a6'
+    url = f"http://api.openweathermap.org/geo/1.0/direct?q={city_name},{state_code},{country_code}&limit={limit}&appid={appid}"
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+
+        if not data:
+            return None
+
+        city_data = data[0]
+        return {
+            'city': city_data.get('name'),
+            'lat': city_data.get('lat'),
+            'lon': city_data.get('lon'),
+            'country': city_data.get('country'),
+            'state': city_data.get('state')
+        }
+
+    except requests.exceptions.RequestException:
+        return None
+
+def transform_forecast(data):
+    days = defaultdict(list)
+    for item in data['list']:
+        date_str = item['dt_txt'].split(' ')[0]
+        days[date_str].append(item)
+
+    forecast = []
+    for date, items in days.items():
+        temps = [i['main']['temp'] for i in items]
+        avg_temp = sum(temps) / len(temps)
+        weather = items[0]['weather'][0]
+        forecast.append({
+            'date': date,
+            'avg_temp': round(avg_temp, 1),
+            'desc': weather['description'],
+            'icon': weather['icon']
+        })
+    return forecast
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_forecast(request):
+    city = request.query_params.get('city')
+    appid = '7e8aa7cdfb2050e8a1c183a3922963a6'
+    cords = get_coordinates(city)
+    lat = cords['lat']
+    lon = cords['lon']
+
+    try:
+        url = f'https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={appid}&units=metric'
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        forecast = transform_forecast(data)
+
+    except requests.exceptions.RequestException as e:
+        return Response({'error': 'API request failed', 'detail': str(e)}, 500)
+    except Exception as e:
+        return Response({'error': 'Internal server error', 'detail': str(e)}, 500)
+    return Response({'forecast': forecast})
+

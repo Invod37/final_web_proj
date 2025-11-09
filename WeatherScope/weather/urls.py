@@ -9,6 +9,9 @@ urlpatterns = [
     path('like-city/', views.like_city, name='like-city'),
     path('register/', views.register, name='register'),
     path('outfit-advice/', views.get_outfit_advice, name='outfit_advice'),
+    path('forecast/', views.get_forecast, name='forecast'),
+
+
 
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
