@@ -8,7 +8,7 @@ async function getWeather(city) {
         document.getElementById('description').textContent = '';
         document.getElementById('weather-icon').src = '';
 
-       const response = await fetch(`${API_URL}weather/?city=${encodeURIComponent(city)}&units=${units}`);
+        const response = await fetch(`${API_URL}weather/?city=${encodeURIComponent(city)}&units=${units}`);
         const data = await response.json();
 
         const unitSign = units === 'imperial' ? '°F' : '°C';
@@ -28,13 +28,15 @@ async function getWeather(city) {
 
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('weather-form');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const city = form.querySelector('input[name="city"]').value.trim();
-        if (city) {
-            getWeather(city);
-        } else {
-            alert('Будь ласка, введіть назву міста.');
-        }
-    });
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const city = form.querySelector('input[name="city"]').value.trim();
+            if (city) {
+                getWeather(city);
+            } else {
+                alert('Будь ласка, введіть назву міста.');
+            }
+        });
+    }
 });
