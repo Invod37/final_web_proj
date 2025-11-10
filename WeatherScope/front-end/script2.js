@@ -1,6 +1,7 @@
 let currentCity = '';
 async function Like(city) {
     if (!city) {
+        currentCity = city;
         alert('Спочатку знайдіть місто!');
         return;
     }
@@ -59,6 +60,6 @@ document.addEventListener('submit', async function(e) {
     }
 });
 
-document.addEventListener('click', function() {
-    if(like){Like(currentCity);}
+like.addEventListener('click', function() {
+    Like(currentCity);
 });

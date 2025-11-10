@@ -8,7 +8,7 @@ async function getWeather(city) {
         document.getElementById('description').textContent = '';
         document.getElementById('weather-icon').src = '';
 
-       const response = await fetch(`${API_URL}weather/?city=${encodeURIComponent(city)}&units=${units}`);
+        const response = await fetch(`${API_URL}weather/?city=${encodeURIComponent(city)}&units=${units}`);
         const data = await response.json();
 
         const unitSign = units === 'imperial' ? '°F' : '°C';
