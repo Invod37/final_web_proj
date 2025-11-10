@@ -49,13 +49,16 @@ async function getFavoriteCities() {
         listDiv.innerHTML += `<div>${city.city_name}</div>`;
     });
 }
-
-document.getElementById('weather-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const city = document.getElementById('city-input').value;
-    currentCity = city;
+const form = document.getElementById('weather-form')
+const like = document.getElementById('like-btn')
+document.addEventListener('submit', async function(e) {
+    if (form){
+       e.preventDefault();
+       const city = document.getElementById('city-input').value;
+       currentCity = city;
+    }
 });
 
-document.getElementById('like-btn').addEventListener('click', function() {
-    Like(currentCity);
+document.addEventListener('click', function() {
+    if(like){Like(currentCity);}
 });

@@ -28,13 +28,15 @@ async function getWeather(city) {
 
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('weather-form');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const city = form.querySelector('input[name="city"]').value.trim();
-        if (city) {
-            getWeather(city);
-        } else {
-            alert('Будь ласка, введіть назву міста.');
-        }
-    });
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const city = form.querySelector('input[name="city"]').value.trim();
+            if (city) {
+                getWeather(city);
+            } else {
+                alert('Будь ласка, введіть назву міста.');
+            }
+        });
+    }
 });
