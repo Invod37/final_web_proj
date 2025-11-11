@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'weather',
+    'drf_yasg',
     'rest_framework.authtoken',
     'django.contrib.admin',
     'django.contrib.auth',
