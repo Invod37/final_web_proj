@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 import requests
 from google import genai
-
+from rest_framework_simplejwt.tokens import RefreshToken
 
 client = genai.Client(api_key='AIzaSyBrFcHanls8a6t7hPgZZWYImNXfMuSkRPE')
 
@@ -114,8 +114,6 @@ def like_city_delete(request, city_id):
         return Response({"message": "Deleted"})
     return Response({"error": "City not found"}, 404)
 
-
-from rest_framework_simplejwt.tokens import RefreshToken
 
 
 @api_view(['POST'])
