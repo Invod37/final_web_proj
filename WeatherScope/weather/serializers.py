@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Like
+from .models import Like, SearchHistory
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 
@@ -8,6 +8,14 @@ class LikeSerializer(serializers.ModelSerializer):
         model = Like
         fields = ['id', 'city_name', 'liked_at']
         read_only_fields = ['id', 'liked_at']
+
+
+class SearchHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SearchHistory
+        fields = ['id', 'city_name', 'searched_at']
+        read_only_fields = ['id', 'searched_at']
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password1 = serializers.CharField(

@@ -16,7 +16,11 @@
     <h2 class="mb-3">Налаштування</h2>
     <p class="text-muted">Тут можна змінювати мову та одиниці (°C / °F).</p>
 
-    <form id="settings-form" class="card p-3">
+    <div id="user-status" class="alert alert-info mb-4" style="display: none;">
+      <strong>Статус:</strong> <span id="login-status"></span>
+    </div>
+
+    <form id="settings-form" class="card p-3 mb-4">
       <div class="mb-3">
         <label class="form-label">Мова інтерфейсу</label>
         <select id="lang" class="form-select">
@@ -42,14 +46,34 @@
         <a class="btn btn-outline-secondary" href="index.html">Скасувати</a>
       </div>
     </form>
+
+    <div class="card p-3">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Історія пошуку</h4>
+        <button id="clear-history-btn" class="btn btn-sm btn-outline-danger" style="display: none;">
+          Очистити все
+        </button>
+      </div>
+      <div id="search-history-container">
+        <p class="text-muted text-center" id="history-empty-message">
+          Увійдіть, щоб побачити історію пошуку
+        </p>
+        <div id="history-list" class="list-group" style="display: none;">
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
+    const API_URL = 'http://127.0.0.1:8000/api/v1/';
+
     document.addEventListener('DOMContentLoaded', () => {
       const savedLang   = localStorage.getItem('ws_lang')   || 'uk';
       const savedUnits  = localStorage.getItem('ws_units')  || 'metric';
       document.getElementById('lang').value = savedLang;
       document.getElementById(savedUnits === 'metric' ? 'celsius' : 'fahrenheit').checked = true;
+
+      checkLoginStatus();
 
       document.getElementById('settings-form').addEventListener('submit', (e) => {
         e.preventDefault();
@@ -60,7 +84,168 @@
         alert('Налаштування збережено');
         window.location.href = 'index.html';
       });
+
+      loadSearchHistory();
+
+      document.getElementById('clear-history-btn').addEventListener('click', clearSearchHistory);
     });
+
+    function checkLoginStatus() {
+      const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+      const statusDiv = document.getElementById('user-status');
+      const statusText = document.getElementById('login-status');
+
+      if (token) {
+        statusDiv.style.display = 'block';
+        statusDiv.className = 'alert alert-success mb-4';
+        statusText.textContent = 'Ви увійшли в систему ✓';
+        console.log('User is logged in. Token:', token.substring(0, 20) + '...');
+      } else {
+        statusDiv.style.display = 'block';
+        statusDiv.className = 'alert alert-warning mb-4';
+        statusText.innerHTML = 'Ви не увійшли. <a href="login.html">Увійти зараз</a>';
+        console.log('User is not logged in. No token found.');
+      }
+    }
+
+    async function loadSearchHistory() {
+      const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+
+      const emptyMessage = document.getElementById('history-empty-message');
+      const historyList = document.getElementById('history-list');
+      const clearBtn = document.getElementById('clear-history-btn');
+
+      if (!token) {
+        emptyMessage.textContent = 'Увійдіть, щоб побачити історію пошуку';
+        emptyMessage.style.display = 'block';
+        historyList.style.display = 'none';
+        clearBtn.style.display = 'none';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}search-history/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Search history loaded:', data);
+          displaySearchHistory(data.history);
+        } else if (response.status === 401) {
+          console.log('User not authenticated');
+          emptyMessage.textContent = 'Сесія закінчилась. Будь ласка, увійдіть знову.';
+          emptyMessage.style.display = 'block';
+          historyList.style.display = 'none';
+          clearBtn.style.display = 'none';
+        } else {
+          console.error('Error response:', response.status);
+          emptyMessage.textContent = 'Помилка завантаження історії';
+          emptyMessage.style.display = 'block';
+          historyList.style.display = 'none';
+          clearBtn.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error loading search history:', error);
+        emptyMessage.textContent = 'Помилка з\'єднання із сервером';
+        emptyMessage.style.display = 'block';
+        historyList.style.display = 'none';
+        clearBtn.style.display = 'none';
+      }
+    }
+
+    function displaySearchHistory(history) {
+      const emptyMessage = document.getElementById('history-empty-message');
+      const historyList = document.getElementById('history-list');
+      const clearBtn = document.getElementById('clear-history-btn');
+
+      if (!history || history.length === 0) {
+        emptyMessage.textContent = 'Історія пошуку порожня';
+        emptyMessage.style.display = 'block';
+        historyList.style.display = 'none';
+        clearBtn.style.display = 'none';
+        return;
+      }
+
+      emptyMessage.style.display = 'none';
+      historyList.style.display = 'block';
+      clearBtn.style.display = 'inline-block';
+      historyList.innerHTML = '';
+
+      history.forEach(item => {
+        const date = new Date(item.searched_at);
+        const dateStr = date.toLocaleDateString('uk-UA', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        const listItem = document.createElement('div');
+        listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+        listItem.innerHTML = `
+          <div>
+            <strong>${item.city_name}</strong>
+            <br>
+            <small class="text-muted">${dateStr}</small>
+          </div>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteHistoryItem(${item.id})">
+            Видалити
+          </button>
+        `;
+        historyList.appendChild(listItem);
+      });
+    }
+
+    async function clearSearchHistory() {
+      if (!confirm('Ви впевнені, що хочете очистити всю історію пошуку?')) {
+        return;
+      }
+
+      const token = localStorage.getItem('access_token');
+
+      try {
+        const response = await fetch(`${API_URL}search-history/clear/`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          alert('Історія пошуку очищена');
+          loadSearchHistory();
+        }
+      } catch (error) {
+        console.error('Error clearing search history:', error);
+        alert('Помилка при очищенні історії');
+      }
+    }
+
+    async function deleteHistoryItem(historyId) {
+      const token = localStorage.getItem('access_token');
+
+      try {
+        const response = await fetch(`${API_URL}search-history/${historyId}/`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          loadSearchHistory();
+        }
+      } catch (error) {
+        console.error('Error deleting history item:', error);
+      }
+    }
   </script>
 </body>
 </html>

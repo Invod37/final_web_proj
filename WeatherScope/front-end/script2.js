@@ -1,4 +1,3 @@
-let currentCity = '';
 async function Like(city) {
     if (!city) {
         currentCity = city;
