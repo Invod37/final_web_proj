@@ -5,13 +5,11 @@ async function Like(city) {
         alert('Спочатку знайдіть місто!');
         return;
     }
-
     const token = localStorage.getItem('token');
     if (!token) {
         alert('Потрібно залогінитися');
         return;
     }
-
     const formData = new FormData();
     formData.append('city_name', city);
 
@@ -47,8 +45,39 @@ async function getFavoriteCities() {
     listDiv.innerHTML = '';
 
     data.forEach(city => {
-        listDiv.innerHTML += `<div>${city.city_name}</div>`;
+        listDiv.innerHTML += `
+            <div class="col-md-4 mb-3">
+                <div class="card bg-dark text-white">
+                    <div class="card-body">
+                        <h5>${city.city_name}</h5>
+                        <button class="btn btn-danger btn-sm" onclick="DeleteFavouriteCities(${city.id})">
+                            Видалити
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
     });
+}
+async function DeleteFavouriteCities(cityId){
+    const token = localStorage.getItem('token');
+    if (!token){
+        alert("You need login")
+    }
+    try {
+        const response = await fetch(`${API_URL}favorite-cities/${cityId}/`,{
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const data = await response.json();
+        alert(data.message);
+        getFavoriteCities();
+    }catch(error){
+          alert('Error ');
+          console.error(error);
+        }
 }
 const form = document.getElementById('weather-form')
 const like = document.getElementById('like-btn')
@@ -61,5 +90,8 @@ document.addEventListener('submit', async function(e) {
 });
 
 like.addEventListener('click', function() {
-    Like(currentCity);
+    if(like){
+        Like(currentCity);
+    }
+
 });
