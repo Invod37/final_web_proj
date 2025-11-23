@@ -44,7 +44,7 @@ async function getWeather(city) {
             displayForecast(data.forecast, unitSign, windUnit);
         }
     } catch (error) {
-        alert('Місто не знайдено або сталася помилка при отриманні даних!');
+        Modal.error('Місто не знайдено або сталася помилка при отриманні даних!');
     }
 }
 
@@ -65,12 +65,12 @@ function displayForecast(forecastData, unitSign, windUnit) {
                     <img src="http://openweathermap.org/img/wn/${day.icon}@2x.png" alt="${day.description}" class="img-fluid" style="max-width: 60px;">
                     <p class="text-capitalize small">${day.description}</p>
                     <div class="mb-2">
-                        <strong>${Math.round(day.temp)}${unitSign}</strong>
+                        <strong style="font-size: 1.3rem; color: #00b4d8;">${Math.round(day.temp)}${unitSign}</strong>
                     </div>
                     <div class="small text-muted">
-                        <div>↑ ${Math.round(day.temp_max)}${unitSign} ↓ ${Math.round(day.temp_min)}${unitSign}</div>
-                        <div>💧 ${day.humidity}%</div>
-                        <div>💨 ${day.wind_speed}${windUnit}</div>
+                        <div style="color: #f0f0f0; font-weight: 500;">↑ ${Math.round(day.temp_max)}${unitSign} ↓ ${Math.round(day.temp_min)}${unitSign}</div>
+                        <div style="color: #f0f0f0; font-weight: 500;">💧 ${day.humidity}%</div>
+                        <div style="color: #f0f0f0; font-weight: 500;">💨 ${day.wind_speed}${windUnit}</div>
                     </div>
                 </div>
             </div>
@@ -245,7 +245,18 @@ document.addEventListener('DOMContentLoaded', function() {
             if (city) {
                 getWeather(city);
             } else {
-                alert('Будь ласка, введіть назву міста.');
+                Modal.warning('Будь ласка, введіть назву міста.');
+            }
+        });
+    }
+
+    const likeBtn = document.getElementById('like-btn');
+    if (likeBtn) {
+        likeBtn.addEventListener('click', function() {
+            if (currentCity && currentCity !== 'London') {
+                Like(currentCity);
+            } else {
+                Modal.warning('Спочатку знайдіть місто!');
             }
         });
     }
@@ -256,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (currentCity) {
                 loadWeatherHistory(currentCity);
             } else {
-                alert('Спочатку виберіть місто');
+                Modal.warning('Спочатку виберіть місто');
             }
         });
     }

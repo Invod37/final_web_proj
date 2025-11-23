@@ -6,6 +6,7 @@
   <title>Settings — WeatherScope</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="modal.css">
 </head>
 <body class="p-4">
   <header class="navbar bg-dark rounded-3 mb-4" data-bs-theme="dark">
@@ -64,6 +65,7 @@
     </div>
   </div>
 
+  <script src="modal.js"></script>
   <script>
     const API_URL = 'http://127.0.0.1:8000/api/v1/';
 
@@ -81,8 +83,9 @@
         const units = document.querySelector('input[name="units"]:checked').value;
         localStorage.setItem('ws_lang', lang);
         localStorage.setItem('ws_units', units);
-        alert('Налаштування збережено');
-        window.location.href = 'index.html';
+        Modal.success('Налаштування збережено').then(() => {
+          window.location.href = 'index.html';
+        });
       });
 
       loadSearchHistory();
@@ -202,7 +205,14 @@
     }
 
     async function clearSearchHistory() {
-      if (!confirm('Ви впевнені, що хочете очистити всю історію пошуку?')) {
+      const confirmed = await Modal.confirm('Ви впевнені, що хочете очистити всю історію пошуку?', {
+        confirmText: 'Так, очистити',
+        cancelText: 'Скасувати',
+        confirmClass: 'danger',
+        title: 'Підтвердження'
+      });
+
+      if (!confirmed) {
         return;
       }
 
@@ -218,12 +228,12 @@
         });
 
         if (response.ok) {
-          alert('Історія пошуку очищена');
+          await Modal.success('Історія пошуку очищена');
           loadSearchHistory();
         }
       } catch (error) {
         console.error('Error clearing search history:', error);
-        alert('Помилка при очищенні історії');
+        Modal.error('Помилка при очищенні історії');
       }
     }
 

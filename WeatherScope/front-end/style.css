@@ -102,7 +102,6 @@ main {
     color: #b0b0b0;
 }
 
-/* Порада - жирний чорний текст */
 #outfit-result,
 #outfit-result * {
     color: #000000 !important;
@@ -124,7 +123,46 @@ main {
 }
 
 #forecast-container .small {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+}
+
+#forecast-container .text-muted {
+    color: #c0c0c0 !important;
+    font-weight: 500;
+}
+
+#forecast-container .small.text-muted div {
+    color: #e0e0e0 !important;
+    margin: 4px 0;
+    font-size: 0.95rem;
+}
+
+#favorite-cities-list .card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#favorite-cities-list .card.favorite-city-clickable {
+    cursor: pointer;
+}
+
+#favorite-cities-list .card.favorite-city-clickable:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 180, 216, 0.4);
+}
+
+#favorite-cities-list .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 180, 216, 0.3);
+}
+
+#favorite-cities-list .card-title {
+    color: #00b4d8;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+#favorite-cities-list .bi-geo-alt-fill {
+    margin: 0.5rem 0;
 }
 
 #weatherHistoryChart {
