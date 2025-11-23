@@ -9,8 +9,9 @@ from rest_framework.permissions import AllowAny
 import requests
 from google import genai
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.conf import settings
 
-client = genai.Client(api_key='AIzaSyBrFcHanls8a6t7hPgZZWYImNXfMuSkRPE')
+client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
 def create_chat_title(prompt: str) -> str:
     try:
