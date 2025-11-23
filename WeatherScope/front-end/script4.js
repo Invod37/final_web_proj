@@ -18,7 +18,7 @@ async function getOutfitAdvice(city) {
 document.getElementById('outfit-btn').addEventListener('click', () => {
     const city = document.getElementById('city-name').textContent.trim();
     if (!city || city === 'Завантаження...') {
-        alert('Спершу оберіть місто!');
+        Modal.warning('Спершу оберіть місто!');
         return;
     }
     getOutfitAdvice(city);

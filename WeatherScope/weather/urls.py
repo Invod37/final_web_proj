@@ -14,9 +14,13 @@ schema_view = get_schema_view(
 )
 urlpatterns = [
     path('weather/', views.get_weather, name='get-weather'),
+    path('weather-history/', views.get_weather_history, name='get-weather-history'),
     path('favorite-cities/', views.favorite_cities_list, name='favorite_cities'),
     path('favorite-cities/<int:city_id>/', views.like_city_delete, name='favorite_cities_delete'),
     path('like-city/', views.like_city, name='like-city'),
+    path('search-history/', views.search_history_list, name='search-history'),
+    path('search-history/clear/', views.clear_search_history, name='clear-search-history'),
+    path('search-history/<int:history_id>/', views.delete_search_history_item, name='delete-search-history-item'),
     path('register/', views.register, name='register'),
     path('outfit-advice/', views.get_outfit_advice, name='outfit_advice'),
     path('login/', views.login, name='token_obtain_pair'),

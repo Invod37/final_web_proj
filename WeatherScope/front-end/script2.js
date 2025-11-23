@@ -1,48 +1,71 @@
-let currentCity = '';
 async function Like(city) {
     if (!city) {
-        currentCity = city;
-        alert('Спочатку знайдіть місто!');
+        Modal.warning('Спочатку знайдіть місто!');
         return;
     }
     const token = localStorage.getItem('token');
     if (!token) {
-        alert('Потрібно залогінитися');
+        const shouldLogin = await Modal.confirm('Потрібно залогінитися, щоб додати місто до улюблених', {
+            confirmText: 'Увійти',
+            cancelText: 'Скасувати',
+            confirmClass: 'primary',
+            title: 'Необхідна авторизація'
+        });
+
+        if (shouldLogin) {
+            window.location.href = 'login.html';
+        }
         return;
     }
     const formData = new FormData();
     formData.append('city_name', city);
 
-    const response = await fetch(`${API_URL}like-city/`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`
-        },
-        body: formData
-    });
+    try {
+        const response = await fetch(`${API_URL}like-city/`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
 
-    const data = await response.json();
-    alert(data.message);
-    getFavoriteCities();
+        const data = await response.json();
+
+        if (response.ok) {
+            Modal.success(data.message);
+            getFavoriteCities();
+        } else {
+            Modal.error(data.error || 'Помилка при додаванні міста');
+        }
+    } catch (error) {
+        Modal.error('Помилка з\'єднання з сервером');
+    }
 }
 
 async function getFavoriteCities() {
     const token = localStorage.getItem('token');
+    const listDiv = document.getElementById('favorite-cities-list');
+    const emptyDiv = document.getElementById('favorite-cities-empty');
+
     if (!token) {
-        alert('Потрібно залогінитися');
+        if (listDiv) {
+            listDiv.innerHTML = '<div class="col-12 text-center text-muted"><p>Увійдіть, щоб побачити улюблені міста</p></div>';
+        }
         return;
     }
 
-    const response = await fetch(`${API_URL}favorite-cities/`, {
-        headers: {
+    try {
+        const response = await fetch(`${API_URL}favorite-cities/`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
-            'Authorization': `Bearer ${token}`
+        if (!response.ok) {
+            throw new Error('Failed to fetch favorite cities');
         }
-    });
-    const data = await response.json();
 
-    const listDiv = document.getElementById('favorite-cities-list');
-    listDiv.innerHTML = '';
+        const data = await response.json();
 
     data.forEach(city => {
         listDiv.innerHTML += `
@@ -87,6 +110,10 @@ document.addEventListener('submit', async function(e) {
        const city = document.getElementById('city-input').value;
        currentCity = city;
     }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    getFavoriteCities();
 });
 
 like.addEventListener('click', function() {
