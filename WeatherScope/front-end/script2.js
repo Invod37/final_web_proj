@@ -3,7 +3,6 @@ async function Like(city) {
         Modal.warning('Спочатку знайдіть місто!');
         return;
     }
-
     const token = localStorage.getItem('token');
     if (!token) {
         const shouldLogin = await Modal.confirm('Потрібно залогінитися, щоб додати місто до улюблених', {
@@ -18,7 +17,6 @@ async function Like(city) {
         }
         return;
     }
-
     const formData = new FormData();
     formData.append('city_name', city);
 
@@ -69,79 +67,48 @@ async function getFavoriteCities() {
 
         const data = await response.json();
 
-        if (!listDiv) return;
-
-        if (data.length === 0) {
-            listDiv.innerHTML = '<div class="col-12 text-center text-muted"><p>У вас ще немає улюблених міст. Додайте місто, натиснувши ❤️</p></div>';
-            return;
-        }
-
-        const isIndexPage = window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/');
-
-        listDiv.innerHTML = '';
-
-        data.forEach(city => {
-            const cityCard = document.createElement('div');
-            cityCard.className = isIndexPage ? 'col-md-3 col-sm-6' : 'col-md-4 col-sm-6';
-
-            cityCard.innerHTML = `
-                <div class="card h-100 ${isIndexPage ? 'favorite-city-clickable' : ''}" ${isIndexPage ? `onclick="loadCityWeather('${city.city_name}')"` : ''}>
-                    <div class="card-body text-center">
-                        <h6 class="card-title text-primary">${city.city_name}</h6>
-                        <i class="bi bi-geo-alt-fill text-info" style="font-size: 2rem;"></i>
-                        ${!isIndexPage ? `
-                        <div class="mt-3">
-                            <button class="btn btn-sm btn-danger" onclick="deleteFavoriteCity(${city.id}, '${city.city_name}')">
-                                <i class="bi bi-trash me-1"></i>Видалити
-                            </button>
-                        </div>
-                        ` : ''}
+    data.forEach(city => {
+        listDiv.innerHTML += `
+            <div class="col-md-4 mb-3">
+                <div class="card bg-dark text-white">
+                    <div class="card-body">
+                        <h5>${city.city_name}</h5>
+                        <button class="btn btn-danger btn-sm" onclick="DeleteFavouriteCities(${city.id})">
+                            Видалити
+                        </button>
                     </div>
                 </div>
-            `;
-            listDiv.appendChild(cityCard);
-        });
-    } catch (error) {
-        console.error('Error fetching favorite cities:', error);
-        if (listDiv) {
-            listDiv.innerHTML = '<div class="col-12 text-center text-danger"><p>Помилка завантаження улюблених міст</p></div>';
-        }
-    }
-}
-
-async function deleteFavoriteCity(cityId, cityName) {
-    const confirmed = await Modal.confirm(`Ви впевнені, що хочете видалити "${cityName}" з улюблених?`, {
-        confirmText: 'Видалити',
-        cancelText: 'Скасувати',
-        confirmClass: 'danger',
-        title: 'Підтвердження видалення'
+            </div>
+        `;
     });
-
-    if (!confirmed) return;
-
+}
+async function DeleteFavouriteCities(cityId){
     const token = localStorage.getItem('token');
-    if (!token) {
-        Modal.error('Потрібно залогінитися');
-        return;
+    if (!token){
+        alert("You need login")
     }
-
     try {
-        const response = await fetch(`${API_URL}favorite-cities/${cityId}/`, {
+        const response = await fetch(`${API_URL}favorite-cities/${cityId}/`,{
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-
-        if (response.ok) {
-            Modal.success('Місто видалено з улюблених');
-            getFavoriteCities();
-        } else {
-            const data = await response.json();
-            Modal.error(data.error || 'Помилка при видаленні міста');
+        const data = await response.json();
+        alert(data.message);
+        getFavoriteCities();
+    }catch(error){
+          alert('Error ');
+          console.error(error);
         }
-    } catch (error) {
-        Modal.error('Помилка з\'єднання з сервером');
+}
+const form = document.getElementById('weather-form')
+const like = document.getElementById('like-btn')
+document.addEventListener('submit', async function(e) {
+    if (form){
+       e.preventDefault();
+       const city = document.getElementById('city-input').value;
+       currentCity = city;
     }
 }
 
@@ -149,18 +116,9 @@ document.addEventListener('DOMContentLoaded', function() {
     getFavoriteCities();
 });
 
-function loadCityWeather(cityName) {
-    const cityInput = document.getElementById('city-input');
-    if (cityInput) {
-        cityInput.value = cityName;
+like.addEventListener('click', function() {
+    if(like){
+        Like(currentCity);
     }
 
-    if (typeof getWeather === 'function') {
-        getWeather(cityName);
-
-        const weatherCard = document.querySelector('.card');
-        if (weatherCard) {
-            weatherCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    }
-}
+});
