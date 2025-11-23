@@ -85,7 +85,7 @@ def get_weather(request):
                 daily_forecasts[date]['temp_min'] = min(daily_forecasts[date]['temp_min'], item['main']['temp_min'])
                 daily_forecasts[date]['temp_max'] = max(daily_forecasts[date]['temp_max'], item['main']['temp_max'])
 
-        forecast_list = list(daily_forecasts.values())
+        forecast_list = list(daily_forecasts.values())[:4]
 
         response_data = {
             'current': current_info,
