@@ -1,15 +1,21 @@
-from drf_yasg.views import get_schema_view
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
-from .models import Like
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-import requests
-from openai import OpenAI
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
+from django.db.models import Q
+
+from .models import Like, SearchHistory, Clothes
+from .serializers import SearchHistorySerializer, ClothesSerializer
+
+import requests
+import time
+from datetime import datetime
+
+from rest_framework_simplejwt.tokens import RefreshToken
+from openai import OpenAI
+
 
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
@@ -31,8 +37,6 @@ def create_chat_title(prompt: str) -> str:
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_weather(request):
-    from datetime import datetime
-    from .models import SearchHistory
 
     appid = settings.API_KEY
     units = request.query_params.get('units', 'metric')
@@ -63,7 +67,6 @@ def get_weather(request):
             'pressure': current_data['main']['pressure'],
         }
 
-        from datetime import datetime
         daily_forecasts = {}
 
         for item in forecast_data['list']:
@@ -101,14 +104,11 @@ def get_weather(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_weather_history(request):
-    from datetime import datetime, timedelta
-    import time
 
     appid = settings.API_KEY
     units = request.query_params.get('units', 'metric')
     city = request.query_params.get('city', 'London')
 
-    print(f"\n=== GET_WEATHER_HISTORY CALLED ===")
     print(f"City: {city}, Units: {units}")
 
     try:
@@ -183,7 +183,7 @@ def get_outfit_advice(request):
     city = request.query_params.get('city', None)
     if not city:
         return Response({"error": "City not specified"}, status=400)
-    appid = '7e8aa7cdfb2050e8a1c183a3922963a6'
+    appid = settings.API_KEY
     url = 'https://api.openweathermap.org/data/2.5/weather?q={}&units=metric&appid=' + appid
     try:
         weather_response = requests.get(url.format(city))
@@ -192,9 +192,6 @@ def get_outfit_advice(request):
 
         temperature = weather_data['main']['temp']
 
-        from .models import Clothes
-        from .serializers import ClothesSerializer
-        from django.db.models import Q
 
         if request.user.is_authenticated:
             clothes = Clothes.objects.filter(
@@ -230,7 +227,7 @@ def ai_outfit_advice(request):
     if not city:
         return Response({"error": "City not specified"}, status=400)
 
-    appid = '7e8aa7cdfb2050e8a1c183a3922963a6'
+    appid = settings.API_KEY
     url = 'https://api.openweathermap.org/data/2.5/weather?q={}&units=metric&appid=' + appid
 
     try:
@@ -244,8 +241,6 @@ def ai_outfit_advice(request):
         wind_speed = weather_data['wind']['speed']
         precipitation = weather_data.get('rain', {}).get('1h', 0) or weather_data.get('snow', {}).get('1h', 0) or 0
 
-        from openai import OpenAI
-        from django.conf import settings
 
         api_key = settings.OPENAI_API_KEY
         if not api_key or api_key == "your_openai_api_key_here":
@@ -308,9 +303,6 @@ winter boots"""
                     "image_url": None
                 })
 
-        from .models import Clothes
-        from .serializers import ClothesSerializer
-        from django.db.models import Q
 
         if request.user.is_authenticated:
             user_clothes = Clothes.objects.filter(
@@ -376,8 +368,6 @@ def like_city(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def search_history_list(request):
-    from .models import SearchHistory
-    from .serializers import SearchHistorySerializer
 
     user = request.user
 
@@ -396,7 +386,6 @@ def search_history_list(request):
 @permission_classes([IsAuthenticated])
 def clear_search_history(request):
 
-    from .models import SearchHistory
 
     user = request.user
     deleted_count = SearchHistory.objects.filter(user=user).delete()[0]
@@ -411,7 +400,6 @@ def clear_search_history(request):
 @permission_classes([IsAuthenticated])
 def delete_search_history_item(request, history_id):
 
-    from .models import SearchHistory
 
     user = request.user
 
@@ -421,7 +409,6 @@ def delete_search_history_item(request, history_id):
         return Response({'message': 'Search history item deleted'})
     except SearchHistory.DoesNotExist:
         return Response({'error': 'History item not found'}, 404)
-    return Response({"message": "Added"})
 
 
 @api_view(['GET'])
@@ -459,7 +446,6 @@ def register(request):
     if User.objects.filter(username=username).exists():
         return Response({"username": ["користувач вже існує"]}, 400)
 
-    user = User.objects.create_user(username=username, email=email, password=password1)
     return Response({"message": "registered"}, 201)
 
 
@@ -488,8 +474,6 @@ def login(request):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def user_clothes_list(request):
-    from .models import Clothes
-    from .serializers import ClothesSerializer
 
     if request.method == 'GET':
         clothes = Clothes.objects.filter(user=request.user)
@@ -508,8 +492,6 @@ def user_clothes_list(request):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def user_clothes_delete(request, clothes_id):
-    from .models import Clothes
-
     try:
         clothes = Clothes.objects.get(id=clothes_id, user=request.user)
         clothes.delete()
