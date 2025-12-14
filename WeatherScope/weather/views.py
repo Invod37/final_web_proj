@@ -11,8 +11,7 @@ from openai import OpenAI
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 
-client = OpenAI(api_key=settings.GPT_API_KEY)
-
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 def create_chat_title(prompt: str) -> str:
     try:

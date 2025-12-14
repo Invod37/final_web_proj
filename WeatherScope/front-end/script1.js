@@ -2,7 +2,18 @@ const API_URL = 'http://127.0.0.1:8000/api/v1/';
 
 let weatherHistoryChart = null;
 let currentCity = 'London';
+const loader = document.getElementById("weather-loader");
+const content = document.getElementById("weather-content");
 
+function showLoader() {
+  if (loader) loader.style.display = "block";
+  if (content) content.style.display = "none";
+}
+
+function hideLoader() {
+  if (loader) loader.style.display = "none";
+  if (content) content.style.display = "block";
+}
 async function handleAuthError(response) {
     if (response.status === 401) {
         const shouldReauth = await Modal.confirm(
@@ -79,7 +90,7 @@ async function getWeather(city) {
         if (data.forecast && data.forecast.length > 0) {
             displayForecast(data.forecast, unitSign, windUnit);
         }
-
+        hideLoader();
         loadClothesRecommendations(city);
     } catch (error) {
         Modal.error('Місто не знайдено або сталася помилка при отриманні даних!');
