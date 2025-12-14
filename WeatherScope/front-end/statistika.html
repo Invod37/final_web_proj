@@ -36,6 +36,12 @@
               </a>
             </li>
             <li class="nav-item">
+              <a class="nav-link" href="add_clothes.html">
+                <i class="bi bi-bag-plus me-2"></i>
+                Мій гардероб
+              </a>
+            </li>
+            <li class="nav-item">
               <a class="nav-link active" href="statistika.html">
                 <i class="bi bi-bar-chart me-2"></i>
                 Статистика
@@ -91,48 +97,57 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    document.getElementById("forecast-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const city = document.getElementById("city-input").value.trim();
-      if (!city) return;
+  <!-- <script src="script3.js"></script> -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('forecast-form');
+      const input = document.getElementById('city-input');
+      const container = document.getElementById('forecast-container');
 
-      const container = document.getElementById("forecast-container");
-      container.innerHTML = '<p class="text-center">Завантаження...</p>';
+      async function loadHistory(city) {
+        container.innerHTML = '<p class="text-center">Завантаження...</p>';
 
-      try {
-        const res = await fetch(`http://127.0.0.1:8000/api/v1/weather-history/?city=${city}&units=metric`);
-        const data = await res.json();
+        try {
+          const res = await fetch(`http://127.0.0.1:8000/api/v1/weather-history/?city=${encodeURIComponent(city)}&units=metric`);
+          const data = await res.json();
 
-        container.innerHTML = "";
+          container.innerHTML = "";
 
-        if (!data.history || data.history.length === 0) {
-          container.innerHTML = `<p class='text-danger text-center'>Не вдалося отримати історію погоди</p>`;
-          return;
-        }
+          if (!data.history || data.history.length === 0) {
+            container.innerHTML = `<p class='text-danger text-center'>Не вдалося отримати історію погоди</p>`;
+            return;
+          }
 
-        data.history.forEach(day => {
-          const card = document.createElement("div");
-          card.className = "col-md-3 m-2";
-          card.innerHTML = `
-            <div class="card text-center shadow-sm">
-              <div class="card-body">
-                <h5>${day.date}</h5>
-                <img src="https://openweathermap.org/img/wn/${day.icon || '01d'}@2x.png" alt="${day.desc || 'Погода'}">
-                <p class="fs-5 fw-bold">${Math.round(day.temp * 10) / 10}°C</p>
-                <p class="text-capitalize">${day.desc || 'Немає опису'}</p>
-                <div class="mt-2 small text-muted">
-                  <div>Мін: ${Math.round(day.temp_min * 10) / 10}°C / Макс: ${Math.round(day.temp_max * 10) / 10}°C</div>
-                  <div>Вологість: ${day.humidity}%</div>
+          data.history.forEach(day => {
+            const card = document.createElement("div");
+            card.className = "col-md-3 m-2";
+            card.innerHTML = `
+              <div class="card text-center shadow-sm">
+                <div class="card-body">
+                  <h5>${day.date}</h5>
+                  <img src="https://openweathermap.org/img/wn/${day.icon || '01d'}@2x.png" alt="${day.desc || 'Погода'}">
+                  <p class="fs-5 fw-bold">${Math.round(day.temp * 10) / 10}°C</p>
+                  <p class="text-capitalize">${day.desc || 'Немає опису'}</p>
+                  <div class="mt-2 small text-muted">
+                    <div>Мін: ${Math.round(day.temp_min * 10) / 10}°C / Макс: ${Math.round(day.temp_max * 10) / 10}°C</div>
+                    <div>Вологість: ${day.humidity}%</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          `;
-          container.appendChild(card);
-        });
-      } catch (error) {
-        container.innerHTML = `<p class='text-danger text-center'>Помилка завантаження даних: ${error.message}</p>`;
+            `;
+            container.appendChild(card);
+          });
+        } catch (error) {
+          container.innerHTML = `<p class='text-danger text-center'>Помилка завантаження даних: ${error.message}</p>`;
+        }
       }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const city = input.value.trim();
+        if (!city) return;
+        loadHistory(city);
+      });
     });
   </script>
 </body>

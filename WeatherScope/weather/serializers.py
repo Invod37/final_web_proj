@@ -1,7 +1,30 @@
 from rest_framework import serializers
-from .models import Like, SearchHistory
+from .models import Like, SearchHistory, Clothes
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+
+
+class ClothesSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Clothes
+        fields = ['id', 'name', 'season', 'temperature_min', 'temperature_max', 'unit', 'img_path', 'image', 'image_url']
+        extra_kwargs = {
+            'image': {'required': False},
+            'img_path': {'required': False}
+        }
+
+    def get_image_url(self, obj):
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        elif obj.img_path:
+            return f"/media/{obj.img_path}"
+        return None
+
 
 class LikeSerializer(serializers.ModelSerializer):
     class Meta:
