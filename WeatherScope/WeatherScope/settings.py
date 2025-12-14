@@ -16,7 +16,8 @@ import os
 
 from dotenv import load_dotenv
 load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GPT_API_KEY = os.getenv("GPT_API_KEY")
+API_KEY = os.getenv("API_KEY")
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 

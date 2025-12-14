@@ -5,6 +5,7 @@ let currentCity = 'London';
 
 async function getWeather(city) {
     try {
+        showLoader();
         currentCity = city;
         const units = localStorage.getItem('ws_units') || 'metric';
         document.getElementById('city-name').textContent = 'Завантаження...';
@@ -43,8 +44,10 @@ async function getWeather(city) {
         if (data.forecast && data.forecast.length > 0) {
             displayForecast(data.forecast, unitSign, windUnit);
         }
+        hideLoader()
     } catch (error) {
         Modal.error('Місто не знайдено або сталася помилка при отриманні даних!');
+        hideLoader()
     }
 }
 
@@ -271,4 +274,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+});
+const loader = document.getElementById("weather-loader");
+const content = document.getElementById("weather-content");
+
+function showLoader() {
+  loader.style.display = "block";
+  content.style.display = "none";
+}
+
+function hideLoader() {
+  loader.style.display = "none";
+  content.style.display = "block";
+}
+
+document.getElementById("weather-form").addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  const city = document.getElementById("city-input").value;
+  showLoader();
+
+  // ⏳ імітація API (заміни на свій fetch)
+  setTimeout(() => {
+    hideLoader();
+
+    document.getElementById("city-name").textContent = city;
+    document.getElementById("temperature").textContent = "22°C";
+    document.getElementById("description").textContent = "сонячно";
+    document.getElementById("weather-icon").src =
+      "https://openweathermap.org/img/wn/01d@2x.png";
+
+    document.getElementById("wind").textContent = "3 м/с";
+    document.getElementById("humidity").textContent = "55%";
+    document.getElementById("pressure").textContent = "1015 hPa";
+  }, 1500);
 });

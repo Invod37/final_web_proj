@@ -7,24 +7,25 @@ from .models import Like
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 import requests
-from google import genai
+from openai import OpenAI
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+client = OpenAI(api_key=settings.GPT_API_KEY)
+
 
 def create_chat_title(prompt: str) -> str:
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "Generate a short chat title."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=20
         )
-        if hasattr(response, "text") and response.text:
-            return response.text
-        elif hasattr(response, "candidates"):
-            return response.candidates[0].content.parts[0].text
-        else:
-            return "No text found in Gemini response."
+        return response.choices[0].message.content.strip()
+
     except Exception as e:
         return f"Error: {e}"
 
@@ -34,7 +35,7 @@ def get_weather(request):
     from datetime import datetime
     from .models import SearchHistory
 
-    appid = '7e8aa7cdfb2050e8a1c183a3922963a6'
+    appid = settings.API_KEY
     units = request.query_params.get('units', 'metric')
     city = request.query_params.get('city', 'London')
 
@@ -104,7 +105,7 @@ def get_weather_history(request):
     from datetime import datetime, timedelta
     import time
 
-    appid = '7e8aa7cdfb2050e8a1c183a3922963a6'
+    appid = settings.API_KEY
     units = request.query_params.get('units', 'metric')
     city = request.query_params.get('city', 'London')
 
@@ -223,10 +224,6 @@ def like_city(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def search_history_list(request):
-    """
-    Get user's search history (last 7 days)
-    Returns list of cities searched with timestamps
-    """
     from .models import SearchHistory
     from .serializers import SearchHistorySerializer
 
@@ -246,9 +243,6 @@ def search_history_list(request):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def clear_search_history(request):
-    """
-    Clear all search history for the authenticated user
-    """
     from .models import SearchHistory
 
     user = request.user
@@ -263,9 +257,6 @@ def clear_search_history(request):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_search_history_item(request, history_id):
-    """
-    Delete a specific search history item
-    """
     from .models import SearchHistory
 
     user = request.user
