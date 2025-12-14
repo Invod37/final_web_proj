@@ -7,34 +7,25 @@ from .models import Like
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 import requests
-from google import genai
+from openai import OpenAI
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 
-_client = None
+client = OpenAI(api_key=settings.GPT_API_KEY)
 
-def get_genai_client():
-    global _client
-    if _client is None:
-        api_key = settings.GEMINI_API_KEY
-        if not api_key or api_key == "your_gemini_api_key_here":
-            raise ValueError("GEMINI_API_KEY is not configured in .env file")
-        _client = genai.Client(api_key=api_key)
-    return _client
 
 def create_chat_title(prompt: str) -> str:
     try:
-        client = get_genai_client()
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "Generate a short chat title."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=20
         )
-        if hasattr(response, "text") and response.text:
-            return response.text
-        elif hasattr(response, "candidates"):
-            return response.candidates[0].content.parts[0].text
-        else:
-            return "No text found in Gemini response."
+        return response.choices[0].message.content.strip()
+
     except Exception as e:
         return f"Error: {e}"
 
@@ -44,7 +35,7 @@ def get_weather(request):
     from datetime import datetime
     from .models import SearchHistory
 
-    appid = '7e8aa7cdfb2050e8a1c183a3922963a6'
+    appid = settings.API_KEY
     units = request.query_params.get('units', 'metric')
     city = request.query_params.get('city', 'London')
 
@@ -114,7 +105,7 @@ def get_weather_history(request):
     from datetime import datetime, timedelta
     import time
 
-    appid = '7e8aa7cdfb2050e8a1c183a3922963a6'
+    appid = settings.API_KEY
     units = request.query_params.get('units', 'metric')
     city = request.query_params.get('city', 'London')
 

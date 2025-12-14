@@ -40,6 +40,7 @@ async function fetchWithAuth(url, options = {}) {
 
 async function getWeather(city) {
     try {
+        showLoader();
         currentCity = city;
         const units = localStorage.getItem('ws_units') || 'metric';
         document.getElementById('city-name').textContent = 'Завантаження...';
@@ -82,6 +83,7 @@ async function getWeather(city) {
         loadClothesRecommendations(city);
     } catch (error) {
         Modal.error('Місто не знайдено або сталася помилка при отриманні даних!');
+        hideLoader()
     }
 }
 

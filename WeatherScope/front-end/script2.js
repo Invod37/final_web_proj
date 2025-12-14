@@ -152,7 +152,8 @@ async function getFavoriteCities() {
     } catch (error) {
         console.error(error);
         if (listDiv) {
-            listDiv.innerHTML = '';
+            listDiv.innerHTML =
+                '<p class="text-danger text-center">Помилка завантаження списку</p>';
         }
     }
 }
@@ -203,9 +204,25 @@ async function DeleteFavouriteCities(cityId) {
     }
 }
 
+const form = document.getElementById('weather-form');
+const like = document.getElementById('like-btn');
+
+document.addEventListener('submit', async function (e) {
+    if (e.target === form) {
+        e.preventDefault();
+        const city = document.getElementById('city-input').value;
+        currentCity = city;
+    }
+});
+
 
 document.addEventListener('DOMContentLoaded', function () {
     getFavoriteCities();
 });
 
 
+if (like) {
+    like.addEventListener('click', function () {
+        Like(currentCity);
+    });
+}
