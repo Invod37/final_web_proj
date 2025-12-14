@@ -1,5 +1,7 @@
 window.currentCity ??= 'London';
 
+let isLoadingFavorites = false;
+
 async function Like(city) {
     if (!city) {
         Modal.warning('Спочатку знайдіть місто!');
@@ -32,6 +34,27 @@ async function Like(city) {
             },
             body: formData
         });
+
+        if (response.status === 401) {
+            const shouldReauth = await Modal.confirm(
+                'Ваша сесія закінчилася. Будь ласка, увійдіть знову.',
+                {
+                    confirmText: 'Увійти',
+                    cancelText: 'Скасувати',
+                    confirmClass: 'primary',
+                    title: 'Необхідна авторизація'
+                }
+            );
+
+            localStorage.removeItem('token');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+
+            if (shouldReauth) {
+                window.location.href = 'login.html';
+            }
+            return;
+        }
 
         const data = await response.json();
 
@@ -66,24 +89,64 @@ async function getFavoriteCities() {
             }
         });
 
+        if (response.status === 401) {
+            const shouldReauth = await Modal.confirm(
+                'Ваша сесія закінчилася. Будь ласка, увійдіть знову.',
+                {
+                    confirmText: 'Увійти',
+                    cancelText: 'Скасувати',
+                    confirmClass: 'primary',
+                    title: 'Необхідна авторизація'
+                }
+            );
+
+            localStorage.removeItem('token');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+
+            if (shouldReauth) {
+                window.location.href = 'login.html';
+            }
+            return;
+        }
+
         if (!response.ok) throw new Error('Failed to fetch favorite cities');
 
         const data = await response.json();
         listDiv.innerHTML = '';
 
         data.forEach(city => {
-            listDiv.innerHTML += `
-                <div class="col-md-4 mb-3">
-                    <div class="card bg-dark text-white">
-                        <div class="card-body">
-                            <h5>${city.city_name}</h5>
-                            <button class="btn btn-danger btn-sm" onclick="DeleteFavouriteCities(${city.id})">
-                                Видалити
-                            </button>
-                        </div>
+            const cityCard = document.createElement('div');
+            cityCard.className = 'col-md-4 mb-3';
+            cityCard.innerHTML = `
+                <div class="card bg-dark text-white h-100">
+                    <div class="card-body">
+                        <h5 class="city-name-clickable" 
+                            style="cursor: pointer; color: #6EC1E4; transition: color 0.3s, transform 0.2s;" 
+                            data-city="${city.city_name}"
+                            title="Клікніть, щоб переглянути погоду"
+                            onmouseover="this.style.color='#48ABD8'; this.style.transform='scale(1.05)';"
+                            onmouseout="this.style.color='#6EC1E4'; this.style.transform='scale(1)';">
+                            <i class="bi bi-geo-alt-fill me-2"></i>${city.city_name}
+                        </h5>
+                        <button class="btn btn-danger btn-sm mt-2" onclick="DeleteFavouriteCities(${city.id})">
+                            <i class="bi bi-trash me-1"></i>Видалити
+                        </button>
                     </div>
                 </div>
             `;
+            listDiv.appendChild(cityCard);
+
+            const cityNameEl = cityCard.querySelector('.city-name-clickable');
+            cityNameEl.addEventListener('click', function() {
+                const cityName = this.getAttribute('data-city');
+                getWeather(cityName);
+                const cityInput = document.getElementById('city-input');
+                if (cityInput) {
+                    cityInput.value = cityName;
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
         });
 
     } catch (error) {
@@ -108,6 +171,27 @@ async function DeleteFavouriteCities(cityId) {
                 'Authorization': `Bearer ${token}`
             }
         });
+
+        if (response.status === 401) {
+            const shouldReauth = await Modal.confirm(
+                'Ваша сесія закінчилася. Будь ласка, увійдіть знову.',
+                {
+                    confirmText: 'Увійти',
+                    cancelText: 'Скасувати',
+                    confirmClass: 'primary',
+                    title: 'Необхідна авторизація'
+                }
+            );
+
+            localStorage.removeItem('token');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+
+            if (shouldReauth) {
+                window.location.href = 'login.html';
+            }
+            return;
+        }
 
         const data = await response.json();
 

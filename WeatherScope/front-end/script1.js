@@ -3,6 +3,41 @@ const API_URL = 'http://127.0.0.1:8000/api/v1/';
 let weatherHistoryChart = null;
 let currentCity = 'London';
 
+async function handleAuthError(response) {
+    if (response.status === 401) {
+        const shouldReauth = await Modal.confirm(
+            'Ваша сесія закінчилася. Будь ласка, увійдіть знову.',
+            {
+                confirmText: 'Увійти',
+                cancelText: 'Скасувати',
+                confirmClass: 'primary',
+                title: 'Необхідна авторизація'
+            }
+        );
+
+        localStorage.removeItem('token');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+
+        if (shouldReauth) {
+            window.location.href = 'login.html';
+        }
+        return true;
+    }
+    return false;
+}
+
+async function fetchWithAuth(url, options = {}) {
+    const response = await fetch(url, options);
+
+    if (response.status === 401) {
+        await handleAuthError(response);
+        throw new Error('Authentication required');
+    }
+
+    return response;
+}
+
 async function getWeather(city) {
     try {
         showLoader();
@@ -44,7 +79,8 @@ async function getWeather(city) {
         if (data.forecast && data.forecast.length > 0) {
             displayForecast(data.forecast, unitSign, windUnit);
         }
-        hideLoader()
+
+        loadClothesRecommendations(city);
     } catch (error) {
         Modal.error('Місто не знайдено або сталася помилка при отриманні даних!');
         hideLoader()
@@ -274,37 +310,312 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
-const loader = document.getElementById("weather-loader");
-const content = document.getElementById("weather-content");
 
-function showLoader() {
-  loader.style.display = "block";
-  content.style.display = "none";
+    const refreshClothesBtn = document.getElementById('refresh-clothes-btn');
+    if (refreshClothesBtn) {
+        refreshClothesBtn.addEventListener('click', function() {
+            if (currentCity) {
+                loadClothesRecommendations(currentCity);
+            }
+        });
+    }
+
+    const aiOutfitBtn = document.getElementById('ai-outfit-btn');
+    if (aiOutfitBtn) {
+        aiOutfitBtn.addEventListener('click', function() {
+            if (currentCity) {
+                loadAIOutfitAdvice(currentCity);
+            }
+        });
+    }
+});
+
+async function loadClothesRecommendations(city) {
+    const container = document.getElementById('clothes-recommendations');
+    const refreshBtn = document.getElementById('refresh-clothes-btn');
+    const aiBtn = document.getElementById('ai-outfit-btn');
+
+    if (!container) return;
+
+    container.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Завантаження рекомендацій...</p></div>';
+
+    try {
+        const token = localStorage.getItem('token');
+        const headers = {};
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        } else {
+            const loginPrompt = document.createElement('div');
+            loginPrompt.className = 'col-12 mt-3';
+            loginPrompt.innerHTML = `
+                <div class="alert alert-warning text-center">
+                    <i class="bi bi-person-plus me-2"></i>
+                    <a href="login.html" class="alert-link">Увійдіть</a> або 
+                    <a href="add_clothes.html" class="alert-link">додайте свій одяг</a>, 
+                    щоб отримати персональні рекомендації
+                </div>
+            `;
+            container.innerHTML = '';
+            container.appendChild(loginPrompt);
+            return;
+        }
+
+        const response = await fetch(`${API_URL}outfit-advice/?city=${encodeURIComponent(city)}`, {
+            headers: headers
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch clothes recommendations');
+        }
+
+        const data = await response.json();
+
+        if (refreshBtn) {
+            refreshBtn.style.display = 'block';
+        }
+
+        if (aiBtn) {
+            aiBtn.style.display = 'inline-block';
+        }
+
+        if (data.clothes && data.clothes.length > 0) {
+            container.innerHTML = '';
+
+            const tempInfo = document.createElement('div');
+            tempInfo.className = 'col-12 mb-3';
+            tempInfo.innerHTML = `
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-thermometer-half me-2"></i>
+                    Поточна температура: <strong>${data.temperature.toFixed(1)}°C</strong>
+                    ${token ? ' (показано ваш одяг та загальні рекомендації)' : ' (увійдіть, щоб побачити персональні рекомендації)'}
+                </div>
+            `;
+            container.appendChild(tempInfo);
+
+            data.clothes.forEach(item => {
+                const clothesCard = document.createElement('div');
+                clothesCard.className = 'col-md-4 col-sm-6';
+
+                const seasonNames = {
+                    'winter': 'Зима',
+                    'spring': 'Весна',
+                    'summer': 'Літо',
+                    'autumn': 'Осінь'
+                };
+
+                const imageUrl = item.image_url || (item.image ? item.image : (item.img_path ? `/media/${item.img_path}` : null));
+
+                clothesCard.innerHTML = `
+                    <div class="card h-100">
+                        ${imageUrl ? `
+                            <img src="${imageUrl}" class="card-img-top" alt="${item.name}" 
+                                 style="height: 200px; object-fit: cover;" 
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div style="display:none; height: 200px; align-items: center; justify-content: center; background: #f0f0f0;">
+                                <i class="bi bi-image" style="font-size: 3rem; color: #ccc;"></i>
+                            </div>
+                        ` : `
+                            <div style="height: 200px; display: flex; align-items: center; justify-content: center; background: #f0f0f0;">
+                                <i class="bi bi-bag" style="font-size: 3rem; color: #ccc;"></i>
+                            </div>
+                        `}
+                        <div class="card-body">
+                            <h6 class="card-title">${item.name}</h6>
+                            <p class="card-text mb-2">
+                                <span class="badge bg-info">${seasonNames[item.season] || item.season}</span>
+                                <span class="badge bg-secondary">${item.temperature_min}°${item.unit} - ${item.temperature_max}°${item.unit}</span>
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(clothesCard);
+            });
+
+
+
+        } else {
+            container.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-warning text-center">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        Немає рекомендацій одягу для температури ${data.temperature.toFixed(1)}°C
+                        ${token ? `<br><small class="d-block mt-2"><a href="add_clothes.html" class="alert-link">Додайте свій одяг</a> для цієї температури</small>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+    } catch (error) {
+        console.error('Error loading clothes:', error);
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-danger text-center">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Помилка при завантаженні рекомендацій одягу
+                </div>
+            </div>
+        `;
+    }
 }
 
-function hideLoader() {
-  loader.style.display = "none";
-  content.style.display = "block";
+async function loadAIOutfitAdvice(city) {
+    const container = document.getElementById('clothes-recommendations');
+    const refreshBtn = document.getElementById('refresh-clothes-btn');
+    const aiBtn = document.getElementById('ai-outfit-btn');
+
+    if (!container) return;
+
+    container.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-success" role="status"></div><p class="mt-2">AI генерує рекомендації...</p></div>';
+
+    try {
+        const token = localStorage.getItem('token');
+        const headers = {};
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_URL}ai-outfit-advice/?city=${encodeURIComponent(city)}`, {
+            headers: headers
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch AI recommendations');
+        }
+
+        const data = await response.json();
+
+        if (refreshBtn) {
+            refreshBtn.style.display = 'block';
+        }
+
+        if (aiBtn) {
+            aiBtn.style.display = 'inline-block';
+        }
+
+        container.innerHTML = '';
+
+        const aiRecommendations = document.createElement('div');
+        aiRecommendations.className = 'col-12 mb-3';
+        aiRecommendations.innerHTML = `
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="bi bi-robot me-2"></i>AI Рекомендує:</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3" id="ai-recommendations-grid"></div>
+                </div>
+            </div>
+        `;
+        container.appendChild(aiRecommendations);
+
+        const aiGrid = document.getElementById('ai-recommendations-grid');
+        data.ai_recommendations.forEach(item => {
+            const itemCard = document.createElement('div');
+            itemCard.className = 'col-md-4 col-sm-6';
+            itemCard.innerHTML = `
+                <div class="card h-100">
+                    ${item.image_url ? `
+                        <img src="${item.image_url}" class="card-img-top" alt="${item.name}" 
+                             style="height: 200px; object-fit: cover;" 
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div style="display:none; height: 200px; align-items: center; justify-content: center; background: #f0f0f0;">
+                            <i class="bi bi-image" style="font-size: 3rem; color: #ccc;"></i>
+                        </div>
+                    ` : `
+                        <div style="height: 200px; display: flex; align-items: center; justify-content: center; background: #f0f0f0;">
+                            <i class="bi bi-bag" style="font-size: 3rem; color: #ccc;"></i>
+                        </div>
+                    `}
+                    <div class="card-body">
+                        <h6 class="card-title">${item.name}</h6>
+                        <span class="badge bg-primary">
+                            <i class="bi bi-magic me-1"></i>AI Generated
+                        </span>
+                    </div>
+                </div>
+            `;
+            aiGrid.appendChild(itemCard);
+        });
+
+        if (data.matched_clothes && data.matched_clothes.length > 0) {
+            const matchHeader = document.createElement('div');
+            matchHeader.className = 'col-12 mb-2 mt-3';
+            matchHeader.innerHTML = `
+                <h6><i class="bi bi-check-circle-fill text-success me-2"></i>Знайдено збігів у вашому гардеробі: ${data.total_matches}</h6>
+            `;
+            container.appendChild(matchHeader);
+
+            const seasonNames = {
+                'winter': 'Зима',
+                'spring': 'Весна',
+                'summer': 'Літо',
+                'autumn': 'Осінь'
+            };
+
+            data.matched_clothes.forEach(item => {
+                const clothesCard = document.createElement('div');
+                clothesCard.className = 'col-md-4 col-sm-6';
+
+                const imageUrl = item.image_url || (item.image ? item.image : (item.img_path ? `/media/${item.img_path}` : null));
+
+                clothesCard.innerHTML = `
+                    <div class="card h-100 border-success">
+                        <div class="position-relative">
+                            <span class="badge bg-success position-absolute top-0 end-0 m-2" style="z-index: 1;">
+                                <i class="bi bi-stars me-1"></i>AI recommended
+                            </span>
+                            ${imageUrl ? `
+                                <img src="${imageUrl}" class="card-img-top" alt="${item.name}" 
+                                     style="height: 200px; object-fit: cover;" 
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div style="display:none; height: 200px; align-items: center; justify-content: center; background: #f0f0f0;">
+                                    <i class="bi bi-image" style="font-size: 3rem; color: #ccc;"></i>
+                                </div>
+                            ` : `
+                                <div style="height: 200px; display: flex; align-items: center; justify-content: center; background: #f0f0f0;">
+                                    <i class="bi bi-bag" style="font-size: 3rem; color: #ccc;"></i>
+                                </div>
+                            `}
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">${item.name} <i class="bi bi-check-circle-fill text-success"></i></h6>
+                            <p class="card-text mb-2">
+                                <span class="badge bg-info">${seasonNames[item.season] || item.season}</span>
+                                <span class="badge bg-secondary">${item.temperature_min}°${item.unit} - ${item.temperature_max}°${item.unit}</span>
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(clothesCard);
+            });
+        } else {
+            const noMatch = document.createElement('div');
+            noMatch.className = 'col-12';
+            noMatch.innerHTML = `
+                <div class="alert alert-warning text-center">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Не знайдено збігів у вашому гардеробі. 
+                    <a href="add_clothes.html" class="alert-link">Додайте одяг</a>, який рекомендує AI!
+                </div>
+            `;
+            container.appendChild(noMatch);
+        }
+
+    } catch (error) {
+        console.error('Error loading AI outfit advice:', error);
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-danger text-center">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Помилка: ${error.message}
+                    ${error.message.includes('OPENAI_API_KEY') ? '<br><small>Будь ласка, налаштуйте OPENAI_API_KEY у файлі .env</small>' : ''}
+                </div>
+            </div>
+        `;
+    }
 }
-
-document.getElementById("weather-form").addEventListener("submit", function (e) {
-  e.preventDefault();
-
-  const city = document.getElementById("city-input").value;
-  showLoader();
-
-  setTimeout(() => {
-    hideLoader();
-
-    document.getElementById("city-name").textContent = city;
-    document.getElementById("temperature").textContent = "22°C";
-    document.getElementById("description").textContent = "сонячно";
-    document.getElementById("weather-icon").src =
-      "https://openweathermap.org/img/wn/01d@2x.png";
-
-    document.getElementById("wind").textContent = "3 м/с";
-    document.getElementById("humidity").textContent = "55%";
-    document.getElementById("pressure").textContent = "1015 hPa";
-  }, 1500);
-});

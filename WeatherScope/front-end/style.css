@@ -102,11 +102,11 @@ main {
     color: #b0b0b0;
 }
 
-#outfit-result,
+/* #outfit-result,
 #outfit-result * {
     color: #000000 !important;
     font-weight: 700 !important;
-}
+} */
 
 #forecast-container .card {
     transition: transform 0.2s, box-shadow 0.2s;

@@ -23,7 +23,10 @@ urlpatterns = [
     path('search-history/<int:history_id>/', views.delete_search_history_item, name='delete-search-history-item'),
     path('register/', views.register, name='register'),
     path('outfit-advice/', views.get_outfit_advice, name='outfit_advice'),
+    path('ai-outfit-advice/', views.ai_outfit_advice, name='ai_outfit_advice'),
     path('login/', views.login, name='token_obtain_pair'),
+    path('clothes/', views.user_clothes_list, name='user-clothes-list'),
+    path('clothes/<int:clothes_id>/', views.user_clothes_delete, name='user-clothes-delete'),
 
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 ]

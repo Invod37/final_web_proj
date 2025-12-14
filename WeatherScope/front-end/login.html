@@ -102,11 +102,16 @@
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
         localStorage.setItem('token', data.access);
+        localStorage.setItem('username', username);
         console.log("Токени успішно збережено");
 
         successAlert.style.display = 'block';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTo = urlParams.get('redirect') || 'index.html';
+
         setTimeout(() => {
-          window.location.href = 'index.html';
+          window.location.href = redirectTo;
         }, 500);
       } else {
         errorAlert.style.display = 'block';
