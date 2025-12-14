@@ -294,7 +294,6 @@ document.getElementById("weather-form").addEventListener("submit", function (e) 
   const city = document.getElementById("city-input").value;
   showLoader();
 
-  // ⏳ імітація API (заміни на свій fetch)
   setTimeout(() => {
     hideLoader();
 
