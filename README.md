@@ -12,7 +12,6 @@ Data is retrieved from the OpenWeatherMap API
 - 7-day weather forecast
 - Save search history
 - Manage favorite cities
-- Receive notifications about severe weather conditions
 - User authentication (JWT)
 
 
