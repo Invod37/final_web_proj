@@ -19,20 +19,6 @@ from openai import OpenAI
 
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-def create_chat_title(prompt: str) -> str:
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "Generate a short chat title."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=20
-        )
-        return response.choices[0].message.content.strip()
-
-    except Exception as e:
-        return f"Error: {e}"
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
