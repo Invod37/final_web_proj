@@ -76,6 +76,17 @@
 
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
+    const submitBtn = document.getElementById('submitBtn');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorList = document.getElementById('errorList');
+    const successAlert = document.getElementById('successAlert');
+
+    errorAlert.style.display = 'none';
+    successAlert.style.display = 'none';
+    errorList.innerHTML = '';
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Вхід...';
 
     try {
       const response = await fetch(`${API_URL}/login/`, {
@@ -87,14 +98,39 @@
       const data = await response.json();
       console.log("Відповідь сервера:", data);
 
-      if (response.ok) {
+      if (response.ok && data.access) {
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('refresh_token', data.refresh);
         localStorage.setItem('token', data.access);
-        localStorage.setItem('refresh', data.refresh);
+        localStorage.setItem('username', username);
+        console.log("Токени успішно збережено");
 
-        console.log("Access токен збережено:", data.access);
-        window.location.href = 'index.html';
+        successAlert.style.display = 'block';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTo = urlParams.get('redirect') || 'index.html';
+
+        setTimeout(() => {
+          window.location.href = redirectTo;
+        }, 500);
       } else {
-        alert("Помилка входу: " + (data.detail || "невірні дані"));
+        errorAlert.style.display = 'block';
+
+        if (data.username) {
+          errorList.innerHTML += `<li>${data.username[0]}</li>`;
+        }
+        if (data.password) {
+          errorList.innerHTML += `<li>${data.password[0]}</li>`;
+        }
+        if (data.detail) {
+          errorList.innerHTML += `<li>${data.detail}</li>`;
+        }
+        if (errorList.innerHTML === '') {
+          errorList.innerHTML = '<li>Невірне ім\'я користувача або пароль</li>';
+        }
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Увійти';
       }
     } catch (error) {
       console.error("Помилка запиту:", error);
